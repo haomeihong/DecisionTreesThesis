@@ -3,12 +3,15 @@ package test;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.util.Random;
+
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.evaluation.NominalPrediction;
 import weka.classifiers.rules.DecisionTable;
 import weka.classifiers.rules.PART;
 import weka.classifiers.trees.DecisionStump;
+import weka.classifiers.trees.Id3;
 import weka.classifiers.trees.J48;
 import weka.core.FastVector;
 import weka.core.Instances;
@@ -52,19 +55,27 @@ public class WekaTest {
 	public static Instances[][] crossValidationSplit(Instances data, int numberOfFolds) {
 		Instances[][] split = new Instances[2][numberOfFolds];
  
+		
+		Random rand = new Random(System.currentTimeMillis()); 
+		Instances randData = new Instances(data);  
+		randData.randomize(rand);    
+	
+		//randData.stratify(numberOfFolds);
+		 
 		for (int i = 0; i < numberOfFolds; i++) {
-			split[0][i] = data.trainCV(numberOfFolds, i);
-			split[1][i] = data.testCV(numberOfFolds, i);
+			split[0][i] = randData.trainCV(numberOfFolds, i);
+			split[1][i] = randData.testCV(numberOfFolds, i);
 		}
  
 		return split;
 	}
  
 	public static void main(String[] args) throws Exception {
-		BufferedReader datafile = readDataFile("weather.txt");
+		BufferedReader datafile = readDataFile("datasets/mushroom.arff");
  
 		Instances data = new Instances(datafile);
-		data.setClassIndex(data.numAttributes() - 1);
+		//data.setClassIndex(data.numAttributes() - 1);
+		data.setClassIndex(0);
  
 		// Do 10-split cross validation
 		Instances[][] split = crossValidationSplit(data, 10);
@@ -75,11 +86,15 @@ public class WekaTest {
  
 		// Use a set of classifiers
 		Classifier[] models = { 
+				new Id3(),
+			
 				new J48(), // a decision tree
 				new PART(), 
 				new DecisionTable(),//decision table majority classifier
 				new DecisionStump() //one-level decision tree
 		};
+		
+		//((J48)models[0]).setUnpruned(true);
  
 		// Run for each model
 		for (int j = 0; j < models.length; j++) {

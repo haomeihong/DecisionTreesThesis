@@ -17,10 +17,18 @@ import weka.core.TechnicalInformation.Type;
 
 import java.util.Enumeration;
 
+import thesis.metrics.InfoGainMetric;
+
 public class CustomId3 
   extends Classifier 
   implements TechnicalInformationHandler, Sourcable {
 
+  public CustomId3(Metric metric) {
+	  this.metric = metric;
+  }
+	
+  private Metric metric;
+	
   /** for serialization */
   static final long serialVersionUID = -2693678647096322561L;
   
@@ -131,17 +139,21 @@ public class CustomId3
     }
 
     // Compute attribute with maximum metric gain.
-    double[] metricGains = new double[data.numAttributes()];
+    double[] metricValues = new double[data.numAttributes()];
     Enumeration attEnum = data.enumerateAttributes();
     while (attEnum.hasMoreElements()) {
       Attribute att = (Attribute) attEnum.nextElement();
-      metricGains[att.index()] = computeMetricGain(data, att);
+      metricValues[att.index()] = metric.computeMetric(data, att);
     }
-    m_Attribute = data.attribute(Utils.maxIndex(metricGains));
+    
+    if (metric.isMaximizingMetric())
+    	m_Attribute = data.attribute(Utils.maxIndex(metricValues));
+    else
+    	m_Attribute = data.attribute(Utils.minIndex(metricValues));
     
     // Make leaf if information gain is zero. 
     // Otherwise create successors.
-    if (Utils.eq(metricGains[m_Attribute.index()], 0)) {
+    if (Utils.eq(metricValues[m_Attribute.index()], 0)) {
       m_Attribute = null;
       m_Distribution = new double[data.numClasses()];
       Enumeration instEnum = data.enumerateInstances();
@@ -156,7 +168,7 @@ public class CustomId3
       Instances[] splitData = splitData(data, m_Attribute);
       m_Successors = new CustomId3[m_Attribute.numValues()];
       for (int j = 0; j < m_Attribute.numValues(); j++) {
-        m_Successors[j] = new CustomId3();
+        m_Successors[j] = new CustomId3(metric);
         m_Successors[j].makeTree(splitData[j]);
       }
     }
@@ -220,61 +232,13 @@ public class CustomId3
   }
 
   /**
-   * Computes information gain for an attribute.
-   *
-   * @param data the data for which info gain is to be computed
-   * @param att the attribute
-   * @return the information gain for the given attribute and data
-   * @throws Exception if computation fails
-   */
-  private double computeMetricGain(Instances data, Attribute att) 
-    throws Exception {
-
-    double infoGain = computeEntropy(data);
-    Instances[] splitData = splitData(data, att);
-    for (int j = 0; j < att.numValues(); j++) {
-      if (splitData[j].numInstances() > 0) {
-        infoGain -= ((double) splitData[j].numInstances() /
-                     (double) data.numInstances()) *
-          computeEntropy(splitData[j]);
-      }
-    }
-    return infoGain;
-  }
-
-  /**
-   * Computes the entropy of a dataset.
-   * 
-   * @param data the data for which entropy is to be computed
-   * @return the entropy of the data's class distribution
-   * @throws Exception if computation fails
-   */
-  private double computeEntropy(Instances data) throws Exception {
-
-    double [] classCounts = new double[data.numClasses()];
-    Enumeration instEnum = data.enumerateInstances();
-    while (instEnum.hasMoreElements()) {
-      Instance inst = (Instance) instEnum.nextElement();
-      classCounts[(int) inst.classValue()]++;
-    }
-    double entropy = 0;
-    for (int j = 0; j < data.numClasses(); j++) {
-      if (classCounts[j] > 0) {
-        entropy -= classCounts[j] * Utils.log2(classCounts[j]);
-      }
-    }
-    entropy /= (double) data.numInstances();
-    return entropy + Utils.log2(data.numInstances());
-  }
-
-  /**
    * Splits a dataset according to the values of a nominal attribute.
    *
    * @param data the data which is to be split
    * @param att the attribute to be used for splitting
    * @return the sets of instances produced by the split
    */
-  private Instances[] splitData(Instances data, Attribute att) {
+  public static Instances[] splitData(Instances data, Attribute att) {
 
     Instances[] splitData = new Instances[att.numValues()];
     for (int j = 0; j < att.numValues(); j++) {
@@ -442,7 +406,7 @@ public class CustomId3
    * @param args the options for the classifier
    */
   public static void main(String[] args) {
-    runClassifier(new CustomId3(), args);
+    runClassifier(new CustomId3(new InfoGainMetric()), args);
   }
 }
 
