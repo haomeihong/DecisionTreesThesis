@@ -1,11 +1,9 @@
 package test;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.util.Random;
 
 import thesis.CustomId3;
+import thesis.DataLoader;
 import thesis.metrics.AccuracyMetric;
 import thesis.metrics.GiniMetric;
 import thesis.metrics.InfoGainMetric;
@@ -13,31 +11,13 @@ import weka.classifiers.Evaluation;
 import weka.core.Instances;
  
 public class WekaTest {
-	
-	public static BufferedReader readDataFile(String filename) {
-		BufferedReader inputReader = null;
- 
-		try {
-			inputReader = new BufferedReader(new FileReader(filename));
-		} catch (FileNotFoundException ex) {
-			System.err.println("File not found: " + filename);
-		}
- 
-		return inputReader;
-	}
  
 	public static void main(String[] args) throws Exception {
-		BufferedReader datafile = readDataFile("datasets/car.arff");
- 
-		Instances data = new Instances(datafile);
-		for (int i = 0; i < data.numAttributes(); i++)
-			data.deleteWithMissing(i);
-		int classIndex = data.numAttributes() - 1; 
-		data.setClassIndex(classIndex);
+		Instances data = DataLoader.loadData("car");
 	
 		System.out.println(data.toSummaryString());
 		System.out.println(data.classAttribute().toString());
-		System.out.println(data.attributeStats(classIndex));
+		System.out.println(data.attributeStats(data.numAttributes() - 1));
 
 		CustomId3[] models = { 
 				new CustomId3(new InfoGainMetric()),
