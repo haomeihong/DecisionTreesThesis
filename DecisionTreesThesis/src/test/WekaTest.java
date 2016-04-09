@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.util.Random;
 
 import thesis.CustomId3;
+import thesis.metrics.AccuracyMetric;
 import thesis.metrics.GiniMetric;
 import thesis.metrics.InfoGainMetric;
 import weka.classifiers.Evaluation;
@@ -40,7 +41,8 @@ public class WekaTest {
 
 		CustomId3[] models = { 
 				new CustomId3(new InfoGainMetric()),
-				new CustomId3(new GiniMetric())
+				new CustomId3(new GiniMetric()),
+				new CustomId3(new AccuracyMetric())
 		};
 		
 		for (int j = 0; j < models.length; j++) {

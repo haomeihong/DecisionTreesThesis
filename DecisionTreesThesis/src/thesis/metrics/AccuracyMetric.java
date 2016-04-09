@@ -5,9 +5,9 @@ import java.util.Enumeration;
 import weka.core.Instance;
 import weka.core.Instances;
 
-public class GiniMetric extends ImpurityMetric {
+public class AccuracyMetric extends ImpurityMetric {
 
-	private double computeGiniImpurity(Instances data) throws Exception {
+	private double computeAccImpurity(Instances data) throws Exception {
 
 		double[] classCounts = new double[data.numClasses()];
 		Enumeration instEnum = data.enumerateInstances();
@@ -15,24 +15,26 @@ public class GiniMetric extends ImpurityMetric {
 			Instance inst = (Instance) instEnum.nextElement();
 			classCounts[(int) inst.classValue()]++;
 		}
-		double gini = 0;
+		double minacc = 1.0;
 		for (int j = 0; j < data.numClasses(); j++) {
 			if (classCounts[j] > 0) {
-				double x = (classCounts[j] / (double) data.numInstances());
-				gini += x*x;
+				double acc = (classCounts[j] / (double) data.numInstances());
+				if (acc < minacc)
+					minacc = acc;
 			}
 		}
-		return 1-gini;
+		return minacc;
 	}
 	
 	@Override
 	public double computeImpurity(Instances data) throws Exception {
-		return computeGiniImpurity(data);
+		return computeAccImpurity(data);
 	}
 
 	@Override
 	public String getStr() {
-		return "Gini";
+		return "Accuracy (purity)";
 	}
 
 }
+
