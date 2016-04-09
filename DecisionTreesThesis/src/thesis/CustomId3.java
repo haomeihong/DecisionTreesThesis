@@ -28,6 +28,10 @@ public class CustomId3
   }
 	
   private Metric metric;
+  
+  public Metric getMetric() {
+	  return metric;
+  }
 	
   /** for serialization */
   static final long serialVersionUID = -2693678647096322561L;

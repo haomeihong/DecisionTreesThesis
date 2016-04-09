@@ -5,6 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.Random;
 
+import thesis.CustomId3;
+import thesis.metrics.GiniMetric;
+import thesis.metrics.InfoGainMetric;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.evaluation.NominalPrediction;
@@ -71,11 +74,14 @@ public class WekaTest {
 	}
  
 	public static void main(String[] args) throws Exception {
-		BufferedReader datafile = readDataFile("datasets/mushroom.arff");
+		BufferedReader datafile = readDataFile("datasets/car.arff");
  
 		Instances data = new Instances(datafile);
-		//data.setClassIndex(data.numAttributes() - 1);
-		data.setClassIndex(0);
+		data.setClassIndex(data.numAttributes() - 1);
+		
+		System.out.println(data.toSummaryString());
+		
+		//data.setClassIndex(0);
  
 		// Do 10-split cross validation
 		Instances[][] split = crossValidationSplit(data, 10);
@@ -85,41 +91,20 @@ public class WekaTest {
 		Instances[] testingSplits = split[1];
  
 		// Use a set of classifiers
-		Classifier[] models = { 
-				new Id3(),
-			
-				new J48(), // a decision tree
-				new PART(), 
-				new DecisionTable(),//decision table majority classifier
-				new DecisionStump() //one-level decision tree
+		CustomId3[] models = { 
+				new CustomId3(new InfoGainMetric()),
+				new CustomId3(new GiniMetric())
 		};
 		
-		//((J48)models[0]).setUnpruned(true);
- 
-		// Run for each model
 		for (int j = 0; j < models.length; j++) {
  
-			// Collect every group of predictions for current model in a FastVector
-			FastVector predictions = new FastVector();
- 
-			// For each training-testing split pair, train and test the classifier
-			for (int i = 0; i < trainingSplits.length; i++) {
-				Evaluation validation = classify(models[j], trainingSplits[i], testingSplits[i]);
- 
-				predictions.appendElements(validation.predictions());
- 
-				// Uncomment to see the summary for each training-testing pair.
-				//System.out.println(models[j].toString());
-			}
- 
-			// Calculate overall accuracy of current classifier on all splits
-			double accuracy = calculateAccuracy(predictions);
- 
-			// Print current classifier's name and accuracy in a complicated,
-			// but nice-looking way.
-			System.out.println("Accuracy of " + models[j].getClass().getSimpleName() + ": "
-					+ String.format("%.2f%%", accuracy)
-					+ "\n---------------------------------");
+			Evaluation evaluation = new Evaluation(data);
+			evaluation.crossValidateModel(models[j], data, 10, new Random(1));
+			System.out.println(models[j].getMetric().getStr());
+			System.out.println(" | ACC = " + evaluation.pctCorrect());
+			System.out.println(" | ROC = " + evaluation.areaUnderROC(0));
+			System.out.println(" | F-M = " + evaluation.fMeasure(0));
+
 		}
  
 	}

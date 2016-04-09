@@ -6,9 +6,9 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Utils;
 
-public class GiniMetric extends ImpurityMetric {
+public class InfoGainMetric extends ImpurityMetric {
 
-	private double computeGiniImpurity(Instances data) throws Exception {
+	private double computeEntropy(Instances data) throws Exception {
 
 		double[] classCounts = new double[data.numClasses()];
 		Enumeration instEnum = data.enumerateInstances();
@@ -16,24 +16,23 @@ public class GiniMetric extends ImpurityMetric {
 			Instance inst = (Instance) instEnum.nextElement();
 			classCounts[(int) inst.classValue()]++;
 		}
-		double gini = 0;
+		double entropy = 0;
 		for (int j = 0; j < data.numClasses(); j++) {
 			if (classCounts[j] > 0) {
-				double x = (classCounts[j] / (double) data.numInstances());
-				gini += x*x;
+				entropy -= classCounts[j] * Utils.log2(classCounts[j]);
 			}
 		}
-		return 1-gini;
+		entropy /= (double) data.numInstances();
+		return entropy + Utils.log2(data.numInstances());
 	}
-	
+
 	@Override
 	public double computeImpurity(Instances data) throws Exception {
-		return computeGiniImpurity(data);
+		return computeEntropy(data);
 	}
 
 	@Override
 	public String getStr() {
-		return "Gini";
+		return "Info Gain";
 	}
-
 }
