@@ -15,7 +15,9 @@ import weka.core.Capabilities.Capability;
 import weka.core.TechnicalInformation.Field;
 import weka.core.TechnicalInformation.Type;
 
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 
 import thesis.metrics.InfoGainMetric;
 
@@ -25,6 +27,12 @@ public class CustomId3
 
   public CustomId3(Metric metric) {
 	  this.metric = metric;
+	  attributesForSuccessors = null;
+  }
+  
+  public CustomId3(Metric metric, List<Attribute> attributesForSuccessors) {
+	  this.metric = metric;
+	  this.attributesForSuccessors = new ArrayList<Attribute>(attributesForSuccessors);
   }
 	
   private Metric metric;
@@ -33,6 +41,19 @@ public class CustomId3
 	  return metric;
   }
 	
+  List<Attribute> attributesForSuccessors;
+  
+  private void initAttributesForSuccessors(Instances data) {
+	  if (attributesForSuccessors != null)
+		  return;
+	  attributesForSuccessors = new ArrayList<Attribute>();
+	  Enumeration attEnum = data.enumerateAttributes();
+	  while (attEnum.hasMoreElements()) {
+	      Attribute att = (Attribute) attEnum.nextElement();
+	      attributesForSuccessors.add(att);
+	  }
+  }
+  
   /** for serialization */
   static final long serialVersionUID = -2693678647096322561L;
   
@@ -134,6 +155,8 @@ public class CustomId3
    */
   private void makeTree(Instances data) throws Exception {
 
+	initAttributesForSuccessors(data);  
+	  
     // Check if no instances have reached this node.
     if (data.numInstances() == 0) {
       m_Attribute = null;
@@ -141,23 +164,49 @@ public class CustomId3
       m_Distribution = new double[data.numClasses()];
       return;
     }
+    
+    boolean makeLeaf = false;
 
+    // If all examples are same class, then make leaf
+    double[] classCounts = new double[data.numClasses()];
+	Enumeration instEnum0 = data.enumerateInstances();
+	while (instEnum0.hasMoreElements()) {
+		Instance inst = (Instance) instEnum0.nextElement();
+		classCounts[(int) inst.classValue()]++;
+	}
+	for (int i = 0; i < data.numClasses(); i++) {
+		if (classCounts[i] == data.numInstances())
+			makeLeaf = true;
+	}
+    
+	//If number of predicting attributes is empty, then make leaf
+	if (attributesForSuccessors.isEmpty())
+		makeLeaf = true;
+    
     // Compute attribute with maximum metric gain.
-    double[] metricValues = new double[data.numAttributes()];
-    Enumeration attEnum = data.enumerateAttributes();
+    double[] metricValues = new double[data.numAttributes()]; 
+    for (Attribute att : attributesForSuccessors) {
+    	metricValues[att.index()] = metric.computeMetric(data, att);
+    }
+    
+    /*Enumeration attEnum = data.enumerateAttributes();
     while (attEnum.hasMoreElements()) {
       Attribute att = (Attribute) attEnum.nextElement();
       metricValues[att.index()] = metric.computeMetric(data, att);
-    }
+    }*/
     
-    if (metric.isMaximizingMetric())
+    if (metric.isMaximizingMetric()) {
+    	metricValues[data.classIndex()] = Double.NEGATIVE_INFINITY;
     	m_Attribute = data.attribute(Utils.maxIndex(metricValues));
-    else
+    }
+    else {
+    	metricValues[data.classIndex()] = Double.POSITIVE_INFINITY;
     	m_Attribute = data.attribute(Utils.minIndex(metricValues));
+    }
     
     // Make leaf if information gain is zero. 
     // Otherwise create successors.
-    if (Utils.eq(metricValues[m_Attribute.index()], 0)) {
+    if (makeLeaf || Utils.eq(metricValues[m_Attribute.index()], metric.valueMakeLeaf())) {
       m_Attribute = null;
       m_Distribution = new double[data.numClasses()];
       Enumeration instEnum = data.enumerateInstances();
@@ -171,8 +220,12 @@ public class CustomId3
     } else {
       Instances[] splitData = splitData(data, m_Attribute);
       m_Successors = new CustomId3[m_Attribute.numValues()];
+      
+      List<Attribute> newAttributesForSuccessors = new ArrayList<Attribute>(attributesForSuccessors);
+      newAttributesForSuccessors.remove(m_Attribute);
+      
       for (int j = 0; j < m_Attribute.numValues(); j++) {
-        m_Successors[j] = new CustomId3(metric);
+        m_Successors[j] = new CustomId3(metric, newAttributesForSuccessors);
         m_Successors[j].makeTree(splitData[j]);
       }
     }

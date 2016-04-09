@@ -27,4 +27,9 @@ public abstract class ImpurityMetric extends Metric {
 	public boolean isMaximizingMetric() {
 		return true;
 	}
+	
+	@Override
+	public double valueMakeLeaf() {
+		return 0.0;
+	}
 }
