@@ -1,4 +1,4 @@
-package test;
+package thesis.experiments;
 
 import java.util.Random;
 
@@ -12,11 +12,11 @@ import thesis.metrics.InfoGainMetric;
 import weka.classifiers.Evaluation;
 import weka.core.Instances;
  
-public class WekaTest {
+public class Experiment1 {
  
 	public static void main(String[] args) throws Exception {
-		Instances data = DataLoader.loadData("vote");
-	
+		Instances data = DataLoader.loadData("car");
+		
 		System.out.println(data.toSummaryString());
 		System.out.println(data.classAttribute().toString());
 		System.out.println(data.attributeStats(data.numAttributes() - 1));
@@ -33,9 +33,9 @@ public class WekaTest {
 			Evaluation evaluation = new Evaluation(data);
 			evaluation.crossValidateModel(models[j], data, 10, new Random(1));
 			System.out.println(models[j].getMetric().getStr());
-			System.out.println(" | ACCURACY   = " + evaluation.pctCorrect());
-			System.out.println(" | F-MEASURE  = " + evaluation.weightedFMeasure()*100);
-			System.out.println(" | AUC        = " + evaluation.weightedAreaUnderROC()*100);
+			System.out.println(" | ACCURACY    = " + evaluation.pctCorrect());
+			System.out.println(" | F-MEASURE   = " + evaluation.weightedFMeasure()*100);
+			System.out.println(" | AUC         = " + evaluation.weightedAreaUnderROC()*100);
 		}
 	}
 }

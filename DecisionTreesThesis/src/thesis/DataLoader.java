@@ -51,10 +51,11 @@ public class DataLoader {
 		for (int i = 0; i < data.numInstances(); i++) {
 			Instance instance = data.instance(i);
 			String classValue = instance.stringValue(classAttribute);
-			if (classValue.equals(positiveClass))
+			if (classValue.equals(positiveClass)) {
 				instance.setValue(data.numAttributes() - 1, positiveClass);
-			else
+			} else {
 				instance.setValue(data.numAttributes() - 1, negativeClass);
+			}
 		}
 		data.setClassIndex(data.numAttributes() - 1); // make new class attribute
 		data.deleteAttributeAt(data.numAttributes() - 2); // delete old class attribute
